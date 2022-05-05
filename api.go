@@ -279,6 +279,7 @@ func (h *Headscale) getMapResponse(
 		PacketFilter: h.aclRules,
 		DERPMap:      h.DERPMap,
 		UserProfiles: profiles,
+		CollectServices: "true",
 	}
 
 	log.Trace().
