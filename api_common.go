@@ -85,7 +85,8 @@ func (h *Headscale) generateMapResponse(
 
 		// Do not instruct clients to collect services, we do not
 		// support or do anything with them
-		CollectServices: "false",
+		// PATCH - enable collect services
+		CollectServices: "true",
 
 		// TODO: Only send if updated
 		PacketFilter: h.aclRules,

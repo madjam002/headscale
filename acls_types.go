@@ -26,6 +26,7 @@ type ACL struct {
 	Protocol     string   `json:"proto"  yaml:"proto"`
 	Sources      []string `json:"src"    yaml:"src"`
 	Destinations []string `json:"dst"    yaml:"dst"`
+	Cap			 []string `json:"cap"    yaml:"cap"`
 }
 
 // Groups references a series of alias in the ACL rules.

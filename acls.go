@@ -158,7 +158,7 @@ func generateACLRules(
 	rules := []tailcfg.FilterRule{}
 
 	for index, acl := range aclPolicy.ACLs {
-		if acl.Action != "accept" {
+		if acl.Action != "accept" && acl.Action != "grant" {
 			return nil, errInvalidAction
 		}
 
@@ -182,29 +182,60 @@ func generateACLRules(
 			return nil, err
 		}
 
-		destPorts := []tailcfg.NetPortRange{}
-		for innerIndex, dest := range acl.Destinations {
-			dests, err := generateACLPolicyDest(
-				machines,
-				aclPolicy,
-				dest,
-				needsWildcard,
-				stripEmaildomain,
-			)
-			if err != nil {
-				log.Error().
-					Msgf("Error parsing ACL %d, Destination %d", index, innerIndex)
-
-				return nil, err
+		if acl.Action == "accept" {
+			destPorts := []tailcfg.NetPortRange{}
+			for innerIndex, dest := range acl.Destinations {
+				dests, err := generateACLPolicyDest(
+					machines,
+					aclPolicy,
+					dest,
+					needsWildcard,
+					stripEmaildomain,
+				)
+				if err != nil {
+					log.Error().
+						Msgf("Error parsing ACL %d, Destination %d", index, innerIndex)
+					return nil, err
+				}
+				destPorts = append(destPorts, dests...)
 			}
-			destPorts = append(destPorts, dests...)
-		}
+			rules = append(rules, tailcfg.FilterRule{
+				SrcIPs:   srcIPs,
+				DstPorts: destPorts,
+				IPProto:  protocols,
+			})
+		} else if acl.Action == "grant" {
+			capGrants := []tailcfg.CapGrant{}
+			for innerIndex, dest := range acl.Destinations {
+				dests, err := generateACLPolicyDest(
+					machines,
+					aclPolicy,
+					dest + ":0", // port not used
+					needsWildcard,
+					stripEmaildomain,
+				)
+				if err != nil {
+					log.Error().
+						Msgf("Error parsing ACL %d, Destination %d", index, innerIndex)
 
-		rules = append(rules, tailcfg.FilterRule{
-			SrcIPs:   srcIPs,
-			DstPorts: destPorts,
-			IPProto:  protocols,
-		})
+					return nil, err
+				}
+				for _, dest := range dests {
+					capGrants = append(capGrants, tailcfg.CapGrant{
+						Dsts:	[]netip.Prefix{
+							netip.MustParsePrefix(dest.IP + "/32"),
+						},
+						Caps:	acl.Cap,
+					})
+				}
+			}
+
+			rules = append(rules, tailcfg.FilterRule{
+				SrcIPs:   srcIPs,
+				CapGrant: capGrants,
+				IPProto:  protocols,
+			})
+		}
 	}
 
 	return rules, nil

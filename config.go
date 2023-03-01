@@ -446,7 +446,7 @@ func GetDNSConfig() (*tailcfg.DNSConfig, string) {
 				dnsConfig.Routes[domain] = restrictedResolvers
 				domains = append(domains, domain)
 			}
-			dnsConfig.Domains = domains
+			// dnsConfig.Domains = domains
 		}
 
 		if viper.IsSet("dns_config.domains") {
